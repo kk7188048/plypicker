@@ -26,8 +26,9 @@ const ProfilePage = () => {
   if (!userData) return <p className="text-center">Loading...</p>;
 
   return (
+    
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-      <Header />
+      
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">Profile</h1>
         <div className="mb-4">

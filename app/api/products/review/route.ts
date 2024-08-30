@@ -4,8 +4,6 @@ import { Product } from '@/app/models/Product';
 import { Review } from '@/app/models/Review';
 import jwt from 'jsonwebtoken';
 
-const PROD_URL = "https://krishna-plypicker.vercel.app";
-const WEB_URL = process.env.NODE_ENV === "production" ? PROD_URL : "http://localhost:3000";
 
 export const dynamic = "force-dynamic";
 

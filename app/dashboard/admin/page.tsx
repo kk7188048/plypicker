@@ -38,7 +38,12 @@ const Dashboard = () => {
     <div className="container mx-auto p-6 bg-gradient-to-r from-blue-50 to-indigo-50 min-h-screen">
       <Header />
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+        <div className='flex space-x-6 items-center'><h1 className="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+        <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded" onClick={() => router.push('/pending')}>
+          
+          Review Pendings
+          </button>
+        </div>
         <p className="text-lg text-gray-600">Role: Admin</p>
       </div>
 

@@ -21,6 +21,7 @@ const ProductPage = ({ params }: { params: { id: string } }) => {
   const [userRole, setUserRole] = useState('');
   const router = useRouter();
 
+
   // Fetch product details
   const fetchProduct = async () => {
     const res = await fetch(`/api/products/${params.id}`);
@@ -78,6 +79,10 @@ const ProductPage = ({ params }: { params: { id: string } }) => {
   };
 
   const handleSubmit = async () => {
+    const PROD_URL = "https://krishna-plypicker.vercel.app";
+    const WEB_URL = process.env.NODE_ENV === "production" ? PROD_URL : "http://localhost:3000";
+    console.log("web url", WEB_URL);
+
     try {
       if (userRole === 'admin') {
         const response = await fetch('/api/products/update', {
@@ -85,12 +90,13 @@ const ProductPage = ({ params }: { params: { id: string } }) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: params.id,
-           changes:{ productName,
-            price,
-            department,
-            image,
-            productDescription: description,
-           }
+            changes: {
+              productName,
+              price,
+              department,
+              image,
+              productDescription: description,
+            }
           }),
         });
         if (response.ok) {
@@ -100,7 +106,9 @@ const ProductPage = ({ params }: { params: { id: string } }) => {
           alert('Failed to submit changes');
         }
       } else {
-        const endpoint = '/api/products/review';
+
+        console.log("web url", WEB_URL);
+        const endpoint = `${WEB_URL}/api/products/review`;
         const response = await axios.put(endpoint, {
           id: params.id,
           changes: {
