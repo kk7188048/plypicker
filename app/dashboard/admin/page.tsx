@@ -1,72 +1,56 @@
+// app/dashboard/page.tsx
 'use client';
 
-import React from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent } from "@/components/ui/card"
-import { ImageCropper } from "@/components/image-crop"
-import { FileWithPath, useDropzone } from "react-dropzone"
-import SvgText from "@/components/svg-text"
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import ProductCard from '@/components/ProductCard';
+import { IProduct } from '@/app/models/Product';
+import Header from '@/components/mainheader';
 
-export type FileWithPreview = FileWithPath & {
-  preview: string
-}
+const Dashboard = () => {
+  const [products, setProducts] = useState<IProduct[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-const accept = {
-  "image/*": [],
-}
-
-export default function CropImage() {
-  const [selectedFile, setSelectedFile] =
-    React.useState<FileWithPreview | null>(null)
-  const [isDialogOpen, setDialogOpen] = React.useState(false)
-
-  const onDrop = React.useCallback(
-    (acceptedFiles: FileWithPath[]) => {
-      const file = acceptedFiles[0]
-      if (!file) {
-        alert("Selected image is too large!")
-        return
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/product');
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const data = await response.json();
+        if (Array.isArray(data.products)) {
+          setProducts(data.products);
+        } else {
+          throw new Error('Expected an array of products');
+        }
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError('Failed to load products.');
       }
+    };
 
-      const fileWithPreview = Object.assign(file, {
-        preview: URL.createObjectURL(file),
-      })
-
-      setSelectedFile(fileWithPreview)
-      setDialogOpen(true)
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  )
-
-  const { getRootProps, getInputProps } = useDropzone({
-    onDrop,
-    accept,
-  })
+    fetchProducts();
+  }, []);
 
   return (
-    <div className="relative ">
-      {selectedFile ? (
-        <ImageCropper
-          dialogOpen={isDialogOpen}
-          setDialogOpen={setDialogOpen}
-          selectedFile={selectedFile}
-          setSelectedFile={setSelectedFile}
-        />
-      ) : (
-        <Avatar
-          {...getRootProps()}
-          className="size-36 cursor-pointer ring-offset-2 ring-2 ring-slate-200"
-        >
-          <input {...getInputProps()} />
-          <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-          <AvatarFallback>CN</AvatarFallback>
-        </Avatar>
-      )}
+    <div className="container mx-auto p-6 bg-gradient-to-r from-blue-50 to-indigo-50 min-h-screen">
+      <Header />
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+        <p className="text-lg text-gray-600">Role: Admin</p>
+      </div>
 
-      <div className=" absolute -bottom-12 left-28 ">
-        <SvgText />
+      {error && <p className="text-red-500 mb-4">{error}</p>} {/* Display error message */}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {products.map((product: IProduct) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default Dashboard;

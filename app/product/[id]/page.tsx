@@ -6,22 +6,19 @@ import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import CropImage from '@/components/crop';
 import { FileWithPreview } from '@/components/crop';
-import SvgText from '@/components/svg-text';
-
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import storage from '@/utils/firebase'; // import the storage instance
+import storage from '@/utils/firebase';
+import axios from 'axios';
+import Header from '@/components/mainheader';
 
 const ProductPage = ({ params }: { params: { id: string } }) => {
-  console.log(params.id);
-  const [product, setProduct] = useState(null);
   const [productName, setProductName] = useState('');
   const [price, setPrice] = useState('');
   const [image, setImage] = useState('');
   const [department, setDepartment] = useState('');
   const [description, setDescription] = useState('');
-  const [crop, setCrop] = useState({ unit: '%', width: 30, aspect: 16 / 9 });
-  const [croppedImage, setCroppedImage] = useState<File | null>(null);
   const [src, setSrc] = useState<string>('');
+  const [userRole, setUserRole] = useState('');
   const router = useRouter();
 
   // Fetch product details
@@ -29,7 +26,6 @@ const ProductPage = ({ params }: { params: { id: string } }) => {
     const res = await fetch(`/api/products/${params.id}`);
     const data = await res.json();
     const prod = data.product;
-    setProduct(prod);
     setProductName(prod.productName);
     setPrice(prod.price);
     setDepartment(prod.department);
@@ -38,54 +34,42 @@ const ProductPage = ({ params }: { params: { id: string } }) => {
     setSrc(prod.image);
   };
 
+  // Fetch user role
+  const fetchUserRole = async () => {
+    const res = await fetch('/api/auth/profile');
+    if (res.ok) {
+      const data = await res.json();
+      console.log(data.role);
+      setUserRole(data.role);
+    } else {
+      console.error('Failed to fetch user role');
+    }
+  };
+
   useEffect(() => {
     if (params.id) {
       fetchProduct();
     }
+    fetchUserRole();
   }, [params.id]);
 
   const handleImageUpload = async (file: FileWithPreview) => {
-    console.log("Uploaded file:", file);
-  
     try {
-      // Create a storage reference
       const storageRef = ref(storage, `products/${params.id}/${file.name}`);
-      console.log("Storage reference created:", storageRef);
-  
-      // Upload the file
       const uploadTask = uploadBytesResumable(storageRef, file);
-      console.log("Upload task created:", uploadTask);
-  
+
       uploadTask.on(
-        "state_changed",
+        'state_changed',
         (snapshot) => {
-          // Track the upload progress
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log(`Upload is ${progress}% done`);
         },
         (error) => {
-          // Handle upload errors
-          console.error("Upload failed:", error);
-          switch (error.code) {
-            case "storage/unauthorized":
-              console.error("User doesn't have permission to access the object");
-              break;
-            case "storage/canceled":
-              console.error("User canceled the upload");
-              break;
-            case "storage/unknown":
-              console.error("Unknown error occurred, inspect the server response");
-              break;
-            default:
-              console.error("An unknown error occurred while uploading the file.");
-          }
+          console.error('Upload failed:', error);
         },
         async () => {
-          // Handle successful upload
-          console.log("File uploaded successfully");
           const url = await getDownloadURL(uploadTask.snapshot.ref);
           setImage(url);
-          console.log("File uploaded successfully. Download URL:", url);
         }
       );
     } catch (error) {
@@ -93,14 +77,32 @@ const ProductPage = ({ params }: { params: { id: string } }) => {
     }
   };
 
-
   const handleSubmit = async () => {
     try {
-      const response = await fetch('/api/products/review', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: params.id, // Now sending 'id' instead of 'productId'
+      if (userRole === 'admin') {
+        const response = await fetch('/api/products/update', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: params.id,
+           changes:{ productName,
+            price,
+            department,
+            image,
+            productDescription: description,
+           }
+          }),
+        });
+        if (response.ok) {
+          alert('Changes submitted successfully');
+          router.push('/dashboard/admin');
+        } else {
+          alert('Failed to submit changes');
+        }
+      } else {
+        const endpoint = '/api/products/review';
+        const response = await axios.put(endpoint, {
+          id: params.id,
           changes: {
             productName,
             price,
@@ -108,63 +110,73 @@ const ProductPage = ({ params }: { params: { id: string } }) => {
             image,
             productDescription: description,
           },
-          author: 'current-user-id', // Replace with the actual user ID
-        }),
-      });
-  
-      if (response.ok) {
-        alert('Review submitted successfully');
-        
-        router.push('/profile');
-      } else {
-        alert('Failed to submit review');
-        
+          author: 'current-user-id',
+        });
+        if (response.status === 200) {
+          alert('Changes submitted successfully');
+          router.push('/dashboard/team');
+        } else {
+          alert('Failed to submit changes');
+        }
       }
     } catch (error) {
-      console.error('Error submitting review:', error);
-      alert('An error occurred while submitting the review');
+      console.error('Error submitting changes:', error);
+      alert('An error occurred while submitting the changes');
     }
   };
-  
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Edit Product</h1>
+    <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-md">
+      <Header />
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Edit Product</h1>
       <form onSubmit={(e) => e.preventDefault()}>
+        <label className="block mb-2 text-lg font-medium text-gray-700">Product Name</label>
         <input
           type="text"
           value={productName}
           onChange={(e) => setProductName(e.target.value)}
-          className="w-full p-2 border mb-4"
+          className="w-full p-3 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Product Name"
         />
+
+        <label className="block mb-2 text-lg font-medium text-gray-700">Price</label>
         <input
           type="text"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          className="w-full p-2 border mb-4"
+          className="w-full p-3 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Price"
         />
+
+        <label className="block mb-2 text-lg font-medium text-gray-700">Department</label>
         <input
           type="text"
           value={department}
           onChange={(e) => setDepartment(e.target.value)}
-          className="w-full p-2 border mb-4"
+          className="w-full p-3 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Department"
         />
+
+        <label className="block mb-2 text-lg font-medium text-gray-700">Product Description</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full p-2 border mb-4"
+          className="w-full p-3 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows={5}
           placeholder="Product Description"
         />
 
-        <div>
-          <h1>Upload and Crop Image</h1>
+        <div className="mb-6">
+          <h2 className="text-lg font-medium text-gray-700 mb-2">Upload and Crop Image</h2>
           <CropImage onImageUpload={handleImageUpload} defaultImageUrl={src} />
         </div>
-        <button onClick={handleSubmit} className="bg-green-500 text-white py-2 px-4 rounded mt-4">Submit for Review</button>
+
+        <button
+          onClick={handleSubmit}
+          className="w-full bg-blue-500 text-white py-3 px-4 rounded-md hover:bg-blue-600 transition duration-300"
+        >
+          {userRole === 'admin' ? 'Update Directly' : 'Submit for Review'}
+        </button>
       </form>
     </div>
   );

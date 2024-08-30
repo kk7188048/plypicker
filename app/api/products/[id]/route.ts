@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { dbConnect } from '@/utils/mongoose';
-import { Product } from '@/models/Product';
+import { Product } from '@/app/models/Product';
 
 // GET a specific product
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   await dbConnect();
   const { id } = params;
 

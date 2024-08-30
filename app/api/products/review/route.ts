@@ -1,7 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { dbConnect } from '@/utils/mongoose';
-import { Product } from '@/models/Product';
-import { Review } from '@/models/Review';
+import { Product } from '@/app/models/Product';
+import { Review } from '@/app/models/Review';
+import jwt from 'jsonwebtoken';
 
 // PUT (submit changes for review) a specific product
 export async function PUT(request: NextRequest) {
@@ -9,6 +10,20 @@ export async function PUT(request: NextRequest) {
 
   const { id, changes, author } = await request.json(); // id, changes: {productName, price, ...}, author: user ID
   console.log('Received data:', { id, changes, author });
+
+  const token = request.cookies.get('token')?.value;
+  if (!token) {
+    return NextResponse.json({ message: 'Unauthorized: No token found' }, { status: 401 });
+  }
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set');
+  }
+
+  // Verify token and extract admin ID
+  const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
+  const authorId = decoded.id;
 
   try {
     const product = await Product.findOne({ id });
@@ -23,7 +38,7 @@ export async function PUT(request: NextRequest) {
       id: id,
       changes,
       status: 'pending',
-      author,
+      author: authorId,
       adminId: null // Will be assigned later by an admin
     });
     console.log('Review object before saving:', review);
@@ -39,5 +54,18 @@ export async function PUT(request: NextRequest) {
       // Handle other types of errors
       return NextResponse.json({ message: 'An unknown error occurred' }, { status: 500 });
     }
+  }
+}
+
+
+export async function GET() {
+  await dbConnect();
+
+  try {
+    const pendingReviews = await Review.find({ status: 'pending' });
+    return NextResponse.json(pendingReviews);
+  } catch (error) {
+    console.error('Failed to fetch pending reviews:', error);
+    return NextResponse.json({ message: 'Failed to fetch pending reviews', error }, { status: 500 });
   }
 }

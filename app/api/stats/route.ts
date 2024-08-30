@@ -1,48 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/utils/mongoose';
-import { Review } from '@/models/Review';
-import { decrypt } from '@/app/lib/utils';
-import { cookies } from 'next/headers';
+import { Review } from '@/app/models/Review';
+import jwt from 'jsonwebtoken';
 
 export async function GET(req: NextRequest) {
   try {
-    // Connect to the database
     await dbConnect();
 
-    // Retrieve the session from the cookies
-    const sessionCookie = cookies().get('session');
-    console.log('Session Cookie:', sessionCookie); // Log the entire cookie object
-
-    // Check if the session cookie exists and has a value
-    if (!sessionCookie || !sessionCookie.value) {
-      console.error('Session cookie is missing or undefined');
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    // Extract JWT token and verify it
+    const token = req.cookies.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET!);
+    const { email, role, id } = decodedToken as jwt.JwtPayload; 
+    console.log('Decoded token:', decodedToken);
+    console.log(email, role, id);
+    // Initialize variables for stats
+    let totalRequests = 0;
+    let approvedRequests = 0;
+    let rejectedRequests = 0;
+    let pendingRequests = 0;
 
-    // Decrypt the session to get the user info
-    const session = await decrypt(sessionCookie.value);
-    console.log('Decrypted Session:', session); // Log the decrypted session
-
-    // Check if the session contains the expected properties
-    if (!session || !session.email) {
-      console.error('Decrypted session does not contain email:', session);
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    if (role === 'team member') {
+      // Fetch stats only for the current user's requests
+      totalRequests = await Review.countDocuments({ author: id });
+      approvedRequests = await Review.countDocuments({ author: id, status: 'approved' });
+      rejectedRequests = await Review.countDocuments({ author: id, status: 'rejected' });
+      pendingRequests = await Review.countDocuments({ author: id, status: 'pending' });
+    } else if (role === 'admin') {
+      // Admin can see all stats
+      totalRequests = await Review.countDocuments();
+      approvedRequests = await Review.countDocuments({ status: 'approved' });
+      rejectedRequests = await Review.countDocuments({ status: 'rejected' });
+      pendingRequests = await Review.countDocuments({ status: 'pending' });
     }
-
-    const { email } = session;
-
-    // Fetch stats for the logged-in user
-    const totalRequests = await Review.countDocuments({ author: email });
-    const approvedRequests = await Review.countDocuments({ author: email, status: 'approved' });
-    const rejectedRequests = await Review.countDocuments({ author: email, status: 'rejected' });
 
     return NextResponse.json({
       totalRequests,
       approvedRequests,
       rejectedRequests,
+      pendingRequests,
     });
   } catch (error) {
-    console.error('Error in GET request:', error); // Log the error
+    console.error('Error fetching profile stats:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

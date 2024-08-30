@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { IProduct, Product } from '@/models/Product';
+import { IProduct, Product } from '@/app/models/Product';
 
 export async function fetchProducts(): Promise<IProduct[]> {
   try {

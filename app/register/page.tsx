@@ -16,49 +16,57 @@ export default function Register() {
     try {
       const { data } = await axios.post('/api/auth/register', { email, password, role });
       localStorage.setItem('token', data.token);
-      router.push('/login'); // Redirect to dashboard after successful registration
+      router.push('/login'); // Redirect to login after successful registration
     } catch (err) {
       setError('Registration failed');
     }
   };
 
   return (
-    <div className="register-container flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="register-form w-full max-w-md p-8 bg-white rounded shadow-md">
-        <h1 className="text-2xl font-bold mb-4">Register</h1>
+    <div className="register-container flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-500 to-indigo-600">
+      <div className="register-form w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Create an Account</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-blue-500 focus:ring-1 focus:ring-blue-500"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-blue-500 focus:ring-1 focus:ring-blue-500"
-            required
-          />
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as 'admin' | 'team member')}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-blue-500 focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="team member">Team Member</option>
-            <option value="admin">Admin</option>
-          </select>
-          <button type="submit" className="register-btn w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700">
+          <div>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'admin' | 'team member')}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="team member">Team Member</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button type="submit" className="w-full py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200">
             Register
           </button>
-          {error && <p className="text-red-500">{error}</p>}
+          {error && <p className="text-red-500 text-center">{error}</p>}
         </form>
-
         <div className="login-link-container text-center mt-4">
-          <p>Already have an account? <a href="/login" className="text-blue-500 hover:underline">Login Now</a></p>
+          <p className="text-gray-600">
+            Already have an account?{' '}
+            <a href="/login" className="text-blue-500 hover:underline">Login Now</a>
+          </p>
         </div>
       </div>
     </div>

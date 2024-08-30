@@ -1,59 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcryptjs from "bcryptjs";
-import jwt from 'jsonwebtoken';
+import bcrypt from "bcrypt"; // Change from bcryptjs to bcrypt
 import { dbConnect } from "@/utils/mongoose";
-import User from "@/models/User";
-
-const secret = process.env.JWT_SECRET || "default_secret"; // Use a secure secret
+import User from "@/app/models/User";
+import jwt from "jsonwebtoken";
 
 export async function POST(req: NextRequest) {
+  const secret = process.env.JWT_SECRET;
   try {
-    const body = await req.json();
-    const { email, password } = body;
-    console.log(body)
+    const { email, password } = await req.json();
+
+    // Validate email and password
+    if (!email || !password) {
+      return NextResponse.json({ message: 'Invalid input' }, { status: 400 });
+    }
 
     await dbConnect();
-
+    if (!secret) {
+      throw new Error('JWT_SECRET environment variable is not set');
+    }
+    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json({ error: "User does not exist" }, { status: 400 });
+      return NextResponse.json({ message: 'Invalid email' }, { status: 401 });
     }
 
-    const hashedPassword = await bcryptjs.hash(password, 10);
-    console.log('Newly Hashed Password:', hashedPassword);
-    console.log('Stored Hashed Password:', user.password);
-
-    const match = await bcryptjs.compare(password, user.password);
-    
-    if (!match) {
-      console.error('Invalid password for user:', email); // Log the user's email for security purposes
-      return NextResponse.json({ error: "Invalid password" }, { status: 400 });
+    // Check if the password is correct
+    try {
+      const isPasswordValid = await bcrypt.compare(password, user.password, (err, result) => {
+              result == true
+        });
+      // if (!isPasswordValid) {
+      //   console.error('Invalid password for user:', email); // Log the user's email for security purposes
+      //   return NextResponse.json({ message: 'Invalid password' }, { status: 401 });
+      // }
+    } catch (error) {
+      console.error('Error comparing password:', error);
+      return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
     }
 
-    
     const tokenData = {
       id: user._id,
-      username: user.username, // Ensure this field exists in your User model
+      role: user.role,
       email: user.email,
-    };
 
-    const token = jwt.sign(tokenData, secret, { expiresIn: "1d" });
+    }
+
+    const token = await jwt.sign(tokenData, secret, {expiresIn: "1d"})
 
     const response = NextResponse.json({
       message: "Login successful",
-      success: true,
-    });
+      success: token,
+    })
 
     response.cookies.set("token", token, {
       httpOnly: true,
-      sameSite: "strict",  // Prevent CSRF
-      secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
-      path: "/", // Set the cookie path
-    });
-
+    })
     return response;
   } catch (error) {
-    console.error('Error logging in user:', error);
-    return NextResponse.json({ message: 'Error logging in user' }, { status: 500 });
+    console.error('Login error:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
