@@ -4,7 +4,11 @@ import { Product } from '@/app/models/Product';
 import { Review } from '@/app/models/Review';
 import jwt from 'jsonwebtoken';
 
-// PUT (submit changes for review) a specific product
+const PROD_URL = "https://krishna-plypicker.vercel.app";
+const WEB_URL = process.env.NODE_ENV === "production" ? PROD_URL : "http://localhost:3000";
+
+export const dynamic = "force-dynamic";
+
 export async function PUT(request: NextRequest) {
   await dbConnect();
 
@@ -21,7 +25,6 @@ export async function PUT(request: NextRequest) {
     throw new Error('JWT_SECRET environment variable is not set');
   }
 
-  // Verify token and extract admin ID
   const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
   const authorId = decoded.id;
 

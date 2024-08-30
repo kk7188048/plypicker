@@ -38,8 +38,8 @@ const Dashboard = () => {
     <div className="container mx-auto p-6 bg-gradient-to-r from-blue-50 to-indigo-50 min-h-screen">
       <Header />
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold text-gray-800">Team Memeber Dashboard</h1>
-        <p className="text-lg text-gray-600">Role: Team Memeber</p>
+        <h1 className="text-xl font-bold text-gray-800">Team Member Dashboard</h1>
+        <p className="text-lg text-gray-600">Role: Team Member</p>
       </div>
 
       {error && <p className="text-red-500 mb-4">{error}</p>} {/* Display error message */}

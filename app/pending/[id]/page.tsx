@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/mainheader';
+import Spin from '@/components/spin';
 
 interface Review {
   _id: string;
@@ -98,7 +99,9 @@ const ReviewDetailsPage = ({ params }: { params: { id: string } }) => {
           </div>
         </div>
       ) : (
-        <p className="text-center text-lg text-gray-600">Loading...</p>
+        <div className='justify-center items-center flex flex-col min-h-screen'>
+          <Spin />
+        </div>
       )}
     </div>
   );

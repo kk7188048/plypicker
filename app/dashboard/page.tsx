@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/mainheader';
-
+import Spin from '@/components/spin';
 const DashboardPage = () => {
   const router = useRouter();
 
@@ -32,10 +32,10 @@ const DashboardPage = () => {
   }, [router]);
 
   return (
-    <div className='flex flex-col min-h-screen'>
-    <p> Loading</p>
-</div>)
-    
+    <div className='justify-center items-center flex flex-col min-h-screen'>
+      <Spin />
+    </div>)
+
 };
 
 export default DashboardPage;
